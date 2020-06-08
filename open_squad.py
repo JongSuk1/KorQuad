@@ -314,7 +314,7 @@ def squad_convert_examples_to_features(
     if threads == 1:
         print("squad_convert_examples_to_features")
         features = []
-        for eg in tqdm(examples, total=len(examples), desc="convert squad examples to features"):
+        for eg in examples:
             feat = squad_convert_example_to_features_sp(
                 eg,
                 max_seq_length=max_seq_length,
@@ -335,17 +335,13 @@ def squad_convert_examples_to_features(
                 is_training=is_training,
             )
             features = list(
-                tqdm(
-                    p.imap(annotate_, examples, chunksize=32),
-                    total=len(examples),
-                    desc="convert squad examples to features",
-                )
+                    p.imap(annotate_, examples, chunksize=32)
             )
 
     new_features = []
     unique_id = 1000000000
     example_index = 0
-    for example_features in tqdm(features, total=len(features), desc="add example index and unique id"):
+    for example_features in features:
         if not example_features:
             continue
         for example_feature in example_features:
@@ -489,7 +485,7 @@ class SquadProcessor(DataProcessor):
             dataset = dataset["train"]
 
         examples = []
-        for tensor_dict in tqdm(dataset):
+        for tensor_dict in dataset:
             examples.append(self._get_example_from_tensor_dict(tensor_dict, evaluate=evaluate))
 
         return examples
@@ -537,20 +533,43 @@ class SquadProcessor(DataProcessor):
             input_data = json.load(reader)["data"]
         return self._create_examples(input_data, "dev")
 
+    def get_test_examples(self, data_dir, filename=None):
+        """
+        Returns the evaluation example from the data directory.
+
+        Args:
+            data_dir: Directory containing the data files used for training and evaluating.
+            filename: None by default, specify this if the evaluation file has a different name than the original one
+                which is `train-v1.1.json` and `train-v2.0.json` for squad versions 1.1 and 2.0 respectively.
+        """
+        if data_dir is None:
+            data_dir = ""
+
+        if self.dev_file is None:
+            raise ValueError("SquadProcessor should be instantiated via SquadV1Processor or SquadV2Processor")
+
+        with open(
+                os.path.join(data_dir, self.dev_file if filename is None else filename), "r", encoding="utf-8"
+        ) as reader:
+            input_data = json.load(reader)["data"]
+        return self._create_examples(input_data, "test")
+
     def _create_examples(self, input_data, set_type):
         is_training = set_type == "train"
         examples = []
 
-        has_answer_cnt, no_answer_cnt = 0, 0
-        for entry in tqdm(input_data[:]):
+        has_answer_cnt, no_answer_cnt, qa_num = 0, 0, 0
+        has_apply, no_apply=0, 0
+        for entry in input_data[:]:
             qa = entry['qa']
             question_text = qa["question"]
             answer_text = qa['answer']
             if question_text is None or answer_text is None:
                 continue
-
-            per_qa_paragraph_cnt = 0
+            qa_num += 1
+            per_qa_ans_paragraph_cnt = 0
             per_qa_unans_paragraph_cnt = 0
+            cnt = 0
             for pi, paragraph in enumerate(entry["paragraphs"]):
                 title = paragraph["title"]
                 context_text = str(paragraph["contents"])
@@ -582,21 +601,47 @@ class SquadProcessor(DataProcessor):
                     is_impossible=is_impossible,
                     answers=answers,
                 )
-                if is_impossible:
-                    no_answer_cnt += 1
-                    per_qa_unans_paragraph_cnt += 1
+                if set_type == "test":
+                    if is_impossible:
+                        no_answer_cnt += 1
+                        per_qa_unans_paragraph_cnt += 1
+                        examples.append(example)
+                        cnt += 1
+                        no_apply += 1
+                    else:
+                        has_answer_cnt += 1
+                        per_qa_ans_paragraph_cnt += 1
+                        examples.append(example)
+                        cnt += 1
+                        has_apply += 1
+                    if cnt >= 6:
+                        break
                 else:
-                    has_answer_cnt += 1
+                    if is_impossible:
+                        no_answer_cnt += 1
+                        per_qa_unans_paragraph_cnt += 1
+                        if per_qa_unans_paragraph_cnt < 2:
+                            examples.append(example)
+                            cnt += 1
+                            no_apply += 1
+                    else:
+                        has_answer_cnt += 1
+                        per_qa_ans_paragraph_cnt += 1
+                        if per_qa_ans_paragraph_cnt < 6:
+                            examples.append(example)
+                            cnt += 1
+                            has_apply += 1
 
-                if is_impossible and per_qa_unans_paragraph_cnt > 3:
-                    continue
+                    if cnt >=6:
+                        break
+
+
                 # train 메모리때문에 개수제한
-                per_qa_paragraph_cnt += 1
-                if is_training and per_qa_paragraph_cnt > 3:
-                    break
-                examples.append(example)
 
+        print("[{}] qa pair num({})".format(set_type, qa_num))
         print("[{}] Has Answer({}) / No Answer({})".format(set_type, has_answer_cnt, no_answer_cnt))
+        print("[{}] Apply Has Answer({}) / Apply No Answer({})".format(set_type, has_apply, no_apply))
+
         return examples
 
 
