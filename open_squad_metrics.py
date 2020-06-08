@@ -322,9 +322,11 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
     # and `pred_text`, and check if they are the same length. If they are
     # NOT the same length, the heuristic has failed. If they are the same
     # length, we assume the characters are one-to-one aligned.
-    tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
+    tokenizer = BasicTokenizer(do_lower_case=do_lower_case, tokenize_chinese_chars = False)
 
     tok_text = " ".join(tokenizer.tokenize(orig_text))
+    pred_text = pred_text.replace("##", "")
+
 
     start_position = tok_text.find(pred_text)
     if start_position == -1:
@@ -335,6 +337,8 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
 
     (orig_ns_text, orig_ns_to_s_map) = _strip_spaces(orig_text)
     (tok_ns_text, tok_ns_to_s_map) = _strip_spaces(tok_text)
+
+    orig_ns_text = orig_ns_text.replace(" ", "")
 
     if len(orig_ns_text) != len(tok_ns_text):
         if verbose_logging:
