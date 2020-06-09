@@ -16,6 +16,6 @@ nsml run \
     --per_gpu_eval_batch_size 24
     --output_dir output
     --overwrite_output_dir
-    --checkpoint electra_gs7000_e1
-    --session kaist_12/korquad-open-ldbd/63
+    --checkpoint electra_gs7000_e0
+    --session kaist_12/korquad-open-ldbd/150
     --version_2_with_negative"

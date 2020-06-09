@@ -104,7 +104,7 @@ def squad_convert_example_to_features(example, max_seq_length, doc_stride, max_q
         actual_text = " ".join(example.doc_tokens[start_position: (end_position + 1)])
         cleaned_answer_text = " ".join(whitespace_tokenize(example.answer_text))
         if actual_text.find(cleaned_answer_text) == -1:
-            # logger.warning("Could not find answer: '%s' vs. '%s'", actual_text, cleaned_answer_text)
+            logger.warning("Could not find answer: '%s' vs. '%s'", actual_text, cleaned_answer_text)
             return []
 
     tok_to_orig_index = []
@@ -603,13 +603,13 @@ class SquadProcessor(DataProcessor):
                 )
                 if set_type == "test":
                     examples.append(example)
-                    if pi >= 3:
+                    if pi >= 4:
                         break
                 else:
                     if is_impossible:
                         no_answer_cnt += 1
                         per_qa_unans_paragraph_cnt += 1
-                        if per_qa_unans_paragraph_cnt < 2:
+                        if per_qa_unans_paragraph_cnt < 3:
                             examples.append(example)
                             cnt += 1
                             no_apply += 1
@@ -621,7 +621,7 @@ class SquadProcessor(DataProcessor):
                             cnt += 1
                             has_apply += 1
 
-                    if cnt >=6:
+                    if cnt >=7:
                         break
 
 
