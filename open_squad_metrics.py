@@ -629,9 +629,12 @@ def compute_predictions_logits(
                 best_answer_text[qa_id_without_s] = text
             else:
                 is_max_prob_updated = prob > best_answer_max_prob[qa_id_without_s]
-                if is_max_prob_updated:
+                if text =="":
+                    continue
+                if is_max_prob_updated or best_answer_text[qa_id_without_s] == "":
                     best_answer_max_prob[qa_id_without_s] = prob
                     best_answer_text[qa_id_without_s] = text
+
         return best_answer_text
 
 

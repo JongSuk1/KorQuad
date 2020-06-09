@@ -602,19 +602,8 @@ class SquadProcessor(DataProcessor):
                     answers=answers,
                 )
                 if set_type == "test":
-                    if is_impossible:
-                        no_answer_cnt += 1
-                        per_qa_unans_paragraph_cnt += 1
-                        examples.append(example)
-                        cnt += 1
-                        no_apply += 1
-                    else:
-                        has_answer_cnt += 1
-                        per_qa_ans_paragraph_cnt += 1
-                        examples.append(example)
-                        cnt += 1
-                        has_apply += 1
-                    if cnt >= 6:
+                    examples.append(example)
+                    if pi >= 3:
                         break
                 else:
                     if is_impossible:

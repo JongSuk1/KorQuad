@@ -17,5 +17,5 @@ nsml run \
     --output_dir output
     --overwrite_output_dir
     --checkpoint electra_gs7000_e1
-    --session kaist_12/korquad-open-ldbd/56
+    --session kaist_12/korquad-open-ldbd/63
     --version_2_with_negative"
