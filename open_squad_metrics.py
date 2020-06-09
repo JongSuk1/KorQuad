@@ -628,9 +628,12 @@ def compute_predictions_logits(
             text = nbest_json[0]["text"]
             prob = nbest_json[0]["probability"]
 
+            if prob < 0.95:
+                text = ""
             if qa_id_without_s not in best_answer_max_prob:
                 best_answer_max_prob[qa_id_without_s] = prob
                 best_answer_text[qa_id_without_s] = text
+
             else:
                 is_max_prob_updated = prob > best_answer_max_prob[qa_id_without_s]
                 if text =="":
@@ -638,7 +641,6 @@ def compute_predictions_logits(
                 if is_max_prob_updated or best_answer_text[qa_id_without_s] == "":
                     best_answer_max_prob[qa_id_without_s] = prob
                     best_answer_text[qa_id_without_s] = text
-
         return best_answer_text
 
 
