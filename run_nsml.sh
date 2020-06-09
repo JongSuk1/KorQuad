@@ -16,4 +16,6 @@ nsml run \
     --per_gpu_eval_batch_size 24
     --output_dir output
     --overwrite_output_dir
-    --version_2_with_negative"
+    --version_2_with_negative
+    --verbose_logging
+    --null_score_diff_threshold -0.1"

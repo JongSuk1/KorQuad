@@ -311,7 +311,7 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
         ns_chars = []
         ns_to_s_map = collections.OrderedDict()
         for (i, c) in enumerate(text):
-            if c == " ":
+            if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
                 continue
             ns_to_s_map[len(ns_chars)] = i
             ns_chars.append(c)
@@ -327,18 +327,30 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
     tok_text = " ".join(tokenizer.tokenize(orig_text))
     pred_text = pred_text.replace("##", "")
 
+    found = True
+    if "[UNK]" in pred_text:
+        texts = pred_text.split("[UNK]")
+        for text in texts:
+            if text.strip() not in tok_text:
+                start_position = -1
+                found = False
+                break
+        if found:
+            start_position = tok_text.find(texts[0])
+    else:
+        start_position = tok_text.find(pred_text)
 
-    start_position = tok_text.find(pred_text)
     if start_position == -1:
         if verbose_logging:
             logger.info("Unable to find text: '%s' in '%s'" % (pred_text, orig_text))
         return orig_text
-    end_position = start_position + len(pred_text) - 1
+    if "[UNK]" in pred_text:
+        end_position = tok_text.find(texts[-1]) + len(texts[-1]) - 1
+    else:
+        end_position = start_position + len(pred_text) - 1
 
     (orig_ns_text, orig_ns_to_s_map) = _strip_spaces(orig_text)
     (tok_ns_text, tok_ns_to_s_map) = _strip_spaces(tok_text)
-
-    orig_ns_text = orig_ns_text.replace(" ", "")
 
     if len(orig_ns_text) != len(tok_ns_text):
         if verbose_logging:
