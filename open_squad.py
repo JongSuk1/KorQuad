@@ -253,6 +253,7 @@ def squad_convert_example_to_features(example, max_seq_length, doc_stride, max_q
                 token_to_orig_map=span["token_to_orig_map"],
                 start_position=start_position,
                 end_position=end_position,
+                source=example.source
             )
         )
     return features
@@ -362,11 +363,11 @@ def squad_convert_examples_to_features(
         all_token_type_ids = torch.tensor([f.token_type_ids for f in features], dtype=torch.long)
         all_cls_index = torch.tensor([f.cls_index for f in features], dtype=torch.long)
         all_p_mask = torch.tensor([f.p_mask for f in features], dtype=torch.float)
-
+        all_source = torch.tensor([f.source for f in features], dtype=torch.int)
         if not is_training:
             all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
             dataset = TensorDataset(
-                all_input_ids, all_attention_masks, all_token_type_ids, all_example_index, all_cls_index, all_p_mask
+                all_input_ids, all_attention_masks, all_token_type_ids, all_example_index, all_cls_index, all_p_mask, all_source
             )
         else:
             all_start_positions = torch.tensor([f.start_position for f in features], dtype=torch.long)
@@ -379,6 +380,7 @@ def squad_convert_examples_to_features(
                 all_end_positions,
                 all_cls_index,
                 all_p_mask,
+                all_source,
             )
 
         return features, dataset
@@ -555,6 +557,7 @@ class SquadProcessor(DataProcessor):
         return self._create_examples(input_data, "test")
 
     def _create_examples(self, input_data, set_type):
+        src = {"kdc": 0, "view": 1, "web": 2, "kin": 3, "nws": 4}
         is_training = set_type == "train"
         examples = []
 
@@ -573,6 +576,7 @@ class SquadProcessor(DataProcessor):
             for pi, paragraph in enumerate(entry["paragraphs"]):
                 title = paragraph["title"]
                 context_text = str(paragraph["contents"])
+                source = paragraph["source"]
                 if context_text is None:
                     continue
                 qas_id = "{}[SEP]{}[SEP]{}".format(question_text, answer_text, pi)
@@ -598,12 +602,13 @@ class SquadProcessor(DataProcessor):
                     answer_text=answer_text,
                     start_position_character=start_position_character,
                     title=title,
+                    source=src[source],
                     is_impossible=is_impossible,
                     answers=answers,
                 )
                 if set_type == "test":
                     examples.append(example)
-                    if pi >= 6:
+                    if pi >= 3:
                         break
                 else:
                     if is_impossible:
@@ -668,6 +673,7 @@ class SquadExample(object):
             answer_text,
             start_position_character,
             title,
+            source,
             answers=[],
             is_impossible=False,
     ):
@@ -680,7 +686,7 @@ class SquadExample(object):
         self.answers = answers
 
         self.start_position, self.end_position = 0, 0
-
+        self.source = source
         doc_tokens = []
         char_to_word_offset = []
         prev_is_whitespace = True
@@ -748,6 +754,7 @@ class SquadFeatures(object):
             token_to_orig_map,
             start_position,
             end_position,
+            source
     ):
         self.input_ids = input_ids
         self.attention_mask = attention_mask
@@ -764,7 +771,7 @@ class SquadFeatures(object):
 
         self.start_position = start_position
         self.end_position = end_position
-
+        self.source = source
 
 class SquadResult(object):
     """

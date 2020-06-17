@@ -263,3 +263,8 @@ pip-selfcheck.json
 deprecated/
 data_loader.py
 evaluation.py
+.nsmlignore
+Figures/
+korquad-open-ldbd/
+count.py
+draw.py

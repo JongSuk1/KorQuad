@@ -312,7 +312,7 @@ def train(args, train_dataset, model, tokenizer):
                 "token_type_ids": batch[2],
                 "start_positions": batch[3],
                 "end_positions": batch[4],
-                "src": 0 # TODO: We need to specify the input with the source type. Then the module automatically select the head with the given source index. 
+                "src": batch[7] # TODO: We need to specify the input with the source type. Then the module automatically select the head with the given source index.
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert"]:
@@ -447,7 +447,7 @@ def predict(args, model, tokenizer, prefix="", val_or_test="val"):
                 "input_ids": batch[0],
                 "attention_mask": batch[1],
                 "token_type_ids": batch[2],
-                "src": 0, # TODO: In predict function, default is 0. (Since we only predict for the case wiki! We may change this option later.)
+                "src": batch[6], # TODO: In predict function, default is 0. (Since we only predict for the case wiki! We may change this option later.)
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert"]:
