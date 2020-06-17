@@ -69,7 +69,13 @@ class ElectraForQuestionAnswering(ElectraPreTrainedModel):
         self.num_labels = config.num_labels
 
         self.electra = ElectraModel(config)
-        self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_0 = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_1 = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_2 = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_3 = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_4 = nn.Linear(config.hidden_size, config.num_labels)
+
+        self.qa_outputs = [self.qa_outputs_0, self.qa_outputs_1, self.qa_outputs_2, self.qa_outputs_3, self.qa_outputs_4]
 
         self.init_weights()
 
@@ -83,6 +89,7 @@ class ElectraForQuestionAnswering(ElectraPreTrainedModel):
         inputs_embeds=None,
         start_positions=None,
         end_positions=None,
+        src=0
     ):
         outputs = self.electra(
             input_ids, attention_mask, token_type_ids, position_ids, head_mask, inputs_embeds
@@ -90,7 +97,7 @@ class ElectraForQuestionAnswering(ElectraPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        logits = self.qa_outputs(sequence_output)
+        logits = self.qa_outputs[src](sequence_output)
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1)
         end_logits = end_logits.squeeze(-1)
@@ -305,6 +312,7 @@ def train(args, train_dataset, model, tokenizer):
                 "token_type_ids": batch[2],
                 "start_positions": batch[3],
                 "end_positions": batch[4],
+                "src": 0 # TODO: We need to specify the input with the source type. Then the module automatically select the head with the given source index. 
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert"]:
@@ -439,6 +447,7 @@ def predict(args, model, tokenizer, prefix="", val_or_test="val"):
                 "input_ids": batch[0],
                 "attention_mask": batch[1],
                 "token_type_ids": batch[2],
+                "src": 0, # TODO: In predict function, default is 0. (Since we only predict for the case wiki! We may change this option later.)
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert"]:
