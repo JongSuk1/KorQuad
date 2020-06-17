@@ -603,7 +603,7 @@ class SquadProcessor(DataProcessor):
                 )
                 if set_type == "test":
                     examples.append(example)
-                    if pi >= 4:
+                    if pi >= 6:
                         break
                 else:
                     if is_impossible:
