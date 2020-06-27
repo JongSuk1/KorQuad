@@ -50,7 +50,7 @@ from transformers import (
     ElectraConfig,
     ElectraTokenizer,
 )
-from open_squad import squad_convert_examples_to_features
+from open_squad_multihead import squad_convert_examples_to_features
 
 
 # ''
@@ -60,7 +60,7 @@ from open_squad_metrics import (
     compute_predictions_logits,
     squad_evaluate,
 )
-from open_squad import SquadResult, SquadV1Processor, SquadV2Processor
+from open_squad_multihead import SquadResult, SquadV1Processor, SquadV2Processor
 
 ##########################################3
 class ElectraForQuestionAnswering(ElectraPreTrainedModel):
@@ -69,7 +69,13 @@ class ElectraForQuestionAnswering(ElectraPreTrainedModel):
         self.num_labels = config.num_labels
 
         self.electra = ElectraModel(config)
-        self.qa_outputs = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_0 = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_1 = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_2 = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_3 = nn.Linear(config.hidden_size, config.num_labels)
+        self.qa_outputs_4 = nn.Linear(config.hidden_size, config.num_labels)
+
+        self.qa_outputs = [self.qa_outputs_0, self.qa_outputs_1, self.qa_outputs_2, self.qa_outputs_3, self.qa_outputs_4]
 
         self.init_weights()
 
@@ -83,6 +89,8 @@ class ElectraForQuestionAnswering(ElectraPreTrainedModel):
         inputs_embeds=None,
         start_positions=None,
         end_positions=None,
+        src=None,
+        flag=True
     ):
         outputs = self.electra(
             input_ids, attention_mask, token_type_ids, position_ids, head_mask, inputs_embeds
@@ -90,12 +98,21 @@ class ElectraForQuestionAnswering(ElectraPreTrainedModel):
 
         sequence_output = outputs[0]
 
-        logits = self.qa_outputs(sequence_output)
+        if flag:
+            logits = self.qa_outputs[0](sequence_output)
+        else:
+            logits = []
+            for i in range(src.size(0)):
+                logit = self.qa_outputs[src[i]](sequence_output[i].unsqueeze(0))
+                logits.append(logit)
+            #print(logits)
+            logits = torch.cat(logits, dim=0)
+
         start_logits, end_logits = logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1)
         end_logits = end_logits.squeeze(-1)
 
-        outputs = (start_logits, end_logits,) + outputs[2:]
+        outputs = (start_logits, end_logits,) + outputs[1:]
         if start_positions is not None and end_positions is not None:
             # If we are on multi-GPU, split add a dimension
             if len(start_positions.size()) > 1:
@@ -305,6 +322,8 @@ def train(args, train_dataset, model, tokenizer):
                 "token_type_ids": batch[2],
                 "start_positions": batch[3],
                 "end_positions": batch[4],
+                "src": batch[-1],
+                "flag": False,
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert"]:
@@ -439,6 +458,7 @@ def predict(args, model, tokenizer, prefix="", val_or_test="val"):
                 "input_ids": batch[0],
                 "attention_mask": batch[1],
                 "token_type_ids": batch[2],
+                "src": 0, # TODO: In predict function, default is 0. (Since we only predict for the case wiki! We may change this option later.)
             }
 
             if args.model_type in ["xlm", "roberta", "distilbert"]:
@@ -581,7 +601,7 @@ def load_and_cache_examples(args, tokenizer, evaluate=False, output_examples=Fal
                 filename = args.predict_file if val_or_test == "val" else "test_data/korquad_open_test.json"
                 examples = processor.get_eval_examples(args.data_dir, filename=filename)
             else:
-                examples = processor.get_train_examples(args.data_dir, only_wiki=args.only_wiki, filename=args.train_file)
+                examples = processor.get_train_examples(args.data_dir, filename=args.train_file)
 
         print("Starting squad_convert_examples_to_features")
         features, dataset = squad_convert_examples_to_features(
@@ -673,11 +693,7 @@ def main():
         type=str,
         help="Where do you want to store the pre-trained models downloaded from s3",
     )
-    parser.add_argument(
-        "--only_wiki",
-        action="store_true",
-        help="If true, the SQuAD examples provided from only kdc source.",
-    )
+
     parser.add_argument(
         "--version_2_with_negative",
         action="store_true",

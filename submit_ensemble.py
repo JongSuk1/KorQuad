@@ -600,8 +600,13 @@ def main():
     parser.add_argument("--server_port", type=str, default="", help="Can be used for distant debugging.")
 
     parser.add_argument("--threads", type=int, default=1, help="multiple threads for converting example to features")
-    parser.add_argument('--checkpoint', type=str, default='electra_best')
-    parser.add_argument('--session', type=str, default='kaist_12/korquad-open-ldbd/184')
+
+    parser.add_argument('--checkpoint1', type=str, default="electra_gs8000_e1")
+    parser.add_argument('--session1', type=str, default="kaist_12/korquad-open-ldbd/451")
+    parser.add_argument('--checkpoint2', type=str, default="electra_gs8000_e1")
+    parser.add_argument('--session2', type=str, default="kaist_12/korquad-open-ldbd/522")
+    parser.add_argument('--checkpoint3', type=str, default="electra_gs12000_e1")
+    parser.add_argument('--session3', type=str, default="kaist_12/korquad-open-ldbd/521")
     ### DO NOT MODIFY THIS BLOCK ###
     # arguments for nsml
     parser.add_argument('--pause', type=int, default=0)
@@ -712,9 +717,9 @@ def main():
 
     if args.mode == 'train':
 
-        model_1 = load_nsml(model_1, "electra_gs8000_e1", "kaist_12/korquad-open-ldbd/451", True, args)
-        model_2 = load_nsml(model_2, "electra_gs8000_e1", "kaist_12/korquad-open-ldbd/522", True, args)
-        model_3 = load_nsml(model_3, "electra_gs12000_e1", "kaist_12/korquad-open-ldbd/521", True, args)
+        model_1 = load_nsml(model_1, args.checkpoint1, args.session1, True, args)
+        model_2 = load_nsml(model_2, args.checkpoint2, args.session2, True, args)
+        model_3 = load_nsml(model_3, args.checkpoint3, args.session3, True, args)
 
 
         model = EnsembleModule(model_1, model_2, model_3)
