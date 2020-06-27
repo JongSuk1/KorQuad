@@ -1,14 +1,14 @@
 # Lanugage Models Are Specialists: Rethinking Fine-tuning Language Models from Diverse Sources
-This repository is an implementation of the NLP task project conducted in KAIST School of Computing, CS492(H): Special Topics in Computer Science<Deep Learning for Real-world Problems>: with NAVER
+This repository is an implementation of the NLP task project conducted in KAIST School of Computing, CS492(H): Special Topics in Computer Science<Deep Learning for Real-world Problems>: with NAVER.
 
 We used KorQuad-open dataset collected from NAVER wiki, blog, web, kin, news. Throughout this task, we implemented it using only NSML resources and want to say thank you to [NSML](https://ai.nsml.navercorp.com/) for providing GPU resourses.
 
 ## Customize open_squad and open_squad_metric
 ### Multiple Paragraph
-In general SQuAD dataset, QA and paragraph are one-to-one. However, this dataset have **multiple paragraphs for one QA**, so we should make multiple squad example for a QA. It is implemented by modifying the existing [official code](https://github.com/huggingface/transformers/blob/master/src/transformers/data). And too many squad example were created, limiting the number of squad example created per QA.
+In general SQuAD dataset, QA and paragraph are one-to-one. However, this dataset has **multiple paragraphs for one QA**, so one should create multiple squad example for a QA. It is implemented by modifying the existing [official code](https://github.com/huggingface/transformers/blob/master/src/transformers/data). And too many squad example were created, limiting the number of squad example created per QA.
 
 ### Use Only Majority Class
-We found minority class is mostly not useful, and it prevents the model from well optimized when included in the training step. So we have the option that you can choose source to use for the train. If you activate the **--only_wiki** option in run_nsml shell file, you can train using only the wiki source. And we reached the best accuracy with this option.
+We found minority class is mostly not useful, and it prevents the model from well optimized when included in the training step. So we added the option that you can choose source to use for the train. If you activate the **--only_wiki** option in run_nsml shell file, you can train using only the wiki source. We reached the best accuracy with this option.
 
 ### Number of paragraphs on inference
 The number of paragraphs on inference affects significantly with the performance as below. The highest accuracy appears when using 5 paragraphs, so the default set to use 5 when inference.
@@ -47,8 +47,7 @@ Answer: 마그마
 ## Train and Inference in NSML
 ### Train Model
 In this project, we tested two types of models: **run_squad.py, run_squad_multihead.py**. You can choose either use a single head or multi-head for each source.
-Single head model show better results and all of the above results are from single-head.
-If you want to use multi-head model, modify run_nsml.sh file run_squad.py to run_squad_multihead.py and delete only_wiki option.
+If you want to train multi-head model, modify run_nsml.sh file run_squad.py to run_squad_multihead.py and delete only_wiki option.
 
 ```bash
 > sh run_nsml.sh
@@ -59,6 +58,7 @@ If you want to use multi-head model, modify run_nsml.sh file run_squad.py to run
 
 #### Ensemble
 You can infer your model by ensemble method. You should choose three trained model in NSML, and set *checkpoint{i} and session{i}* (i= 1,2,3) of them in submit_ensemble.sh
+Note that we only support the ensemble for only single head models.
 
 ```bash
 > sh submit_ensemble.sh
@@ -75,7 +75,7 @@ Also you can infer with one model.
 > nsml submit {SESSION NAME} best 
 ```
 
-When you want to control the number of paragraphs when inference on a trained model, edit (line 607) in open_squad.py and use submit shell
+When you want to control the number of paragraphs when inference on a trained model, edit (line 607) in open_squad.py and use the submit shell.
 
 
 
